@@ -23,10 +23,20 @@
         </categories>
         <offers>
             <?php foreach ($offers as $offer): ?>
-                <offer id="<?= $offer['id'] ?>" <?= isset($offer['bid']) ? "bid=\"\"" : '' ?>>
-                    <name><?= $offer['name'] ?></name>
-                    <?php if (isset($offer['vendor'])): ?>
+                <offer id="<?= $offer['id'] ?>"
+                    <?= isset($offer['bid']) ? "bid=\"\"" : '' ?>
+                    <?= $simplifiedOffers ? 'type="vendor.model"' : '' ?>>
+                    <?php if ($simplifiedOffers): ?>
+                        <name><?= $offer['name'] ?></name>
+                        <?php if (isset($offer['vendor'])): ?>
+                            <vendor><?= $offer['vendor'] ?></vendor>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <model><?= $offer['model'] ?></model>
                         <vendor><?= $offer['vendor'] ?></vendor>
+                        <?php if (isset($offer['typePrefix'])): ?>
+                            <typePrefix><?= $offer['typePrefix'] ?></typePrefix>
+                        <?php endif; ?>
                     <?php endif; ?>
                     <?php if (isset($offer['vendorCode'])): ?>
                         <vendorCode><?= $offer['vendorCode'] ?></vendorCode>
