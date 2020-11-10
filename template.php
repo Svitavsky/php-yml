@@ -24,8 +24,9 @@
         <offers>
             <?php foreach ($offers as $offer): ?>
                 <offer id="<?= $offer['id'] ?>"
-                    <?= isset($offer['bid']) ? "bid=\"\"" : '' ?>
-                    <?= $simplifiedOffers ? 'type="vendor.model"' : '' ?>>
+                    <?= isset($offer['bid']) ? "bid=\"{$offer['bid']}\"" : '' ?>
+                    <?= $simplifiedOffers ? 'type="vendor.model"' : '' ?>
+                    <?= isset($offer['available']) ? "available=\"{$offer['available']}\"" : '' ?> >
                     <?php if ($simplifiedOffers): ?>
                         <name><?= $offer['name'] ?></name>
                         <?php if (isset($offer['vendor'])): ?>
@@ -77,8 +78,6 @@
                         <store><?= $offer['store'] ?></store>
                     <?php endif; ?>
                     <description><?= $offer['description'] ?></description>
-                    <!--                    <sales_notes>--><? //= $offer['sales_notes'] ?><!--</sales_notes>-->
-                    <!--                    <min-quantity>2</min-quantity>-->
                     <?php if (isset($offer['manufacturer_warranty'])): ?>
                         <manufacturer_warranty><?= $offer['manufacturer_warranty'] ?></manufacturer_warranty>
                     <?php endif; ?>

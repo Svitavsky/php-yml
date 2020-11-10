@@ -42,19 +42,19 @@ class YMLGenerator
      */
     public function run()
     {
-        $config = $this->getConfig();
+        $data = $this->getData();
         if ($this->message) {
             return;
         }
 
-        $builder = new Builder($config);
+        $builder = new Builder($data);
         $text = $builder->build();
-        file_put_contents($config['ymlFilename'], $text);
+        file_put_contents($data['ymlFilename'], $text);
 
-        $this->message = "Файл {$config['ymlFilename']} успешно сгенерирован!";
+        $this->message = "Файл {$data['ymlFilename']} успешно сгенерирован!";
     }
 
-    private function getConfig()
+    private function getData()
     {
         if (!file_exists(self::CONFIG_FILENAME)) {
             $this->message = 'Файл конфигурации config.php не найден! Создайте его, затем перезапустите генератор.';
@@ -75,10 +75,28 @@ class YMLGenerator
             $this->message = "Отсутствуют параметры в файле конфигурации config.php: {$keys}";
         }
 
+        $config['availableCountries'] = $this->getAvailableCountries();
         $config['date'] = date("Y-m-d H:i", time());
 
-        $config['categories'] = $this->categories;
-        $config['offers'] = $this->offers;
-        return $config;
+        $validator = new Validator();
+        $validatedOffers = $validator->validate($config['simplifiedOffers'], $this->offers);
+
+        $data = [
+            'config' => $config,
+            'categories' => $this->categories,
+            'offers' => $validatedOffers
+        ];
+
+        return $data;
+    }
+
+    /**
+     * Получение списка доступных стран
+     * @return array
+     */
+    private function getAvailableCountries()
+    {
+        $countriesList = file_get_contents('countries.csv');
+        return explode(',', $countriesList);
     }
 }
