@@ -1,5 +1,7 @@
 <?php
 
+namespace src;
+
 class Builder
 {
     // Возможные состояния уцененного товара

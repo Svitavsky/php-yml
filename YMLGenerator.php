@@ -1,5 +1,7 @@
 <?php
 
+namespace src;
+
 class YMLGenerator
 {
     /**
@@ -72,14 +74,14 @@ class YMLGenerator
 
         if (count($missingKeys)) {
             $keys = implode(' ', $missingKeys);
-            $this->message = "Отсутствуют параметры в файле конфигурации config.php: {$keys}";
+            $this->message = "Отсутствуют обязательные параметры в файле конфигурации config.php: {$keys}";
         }
 
         $config['availableCountries'] = $this->getAvailableCountries();
         $config['date'] = date("Y-m-d H:i", time());
 
-        $validator = new Validator();
-        $validatedOffers = $validator->validate($config['simplifiedOffers'], $this->offers);
+        $validator = new Validator($config['simplifiedOffers']);
+        $validatedOffers = $validator->validate($this->offers);
 
         $data = [
             'config' => $config,
