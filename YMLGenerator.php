@@ -5,27 +5,10 @@ namespace src;
 class YMLGenerator
 {
     /**
-     * Имя файла конфигурации
-     */
-    const CONFIG_FILENAME = 'config.php';
-
-    /**
-     * Список категорий
+     * Список данных
      * @var array
      */
-    public $categories;
-
-    /**
-     * Список товаров
-     * @var array
-     */
-    public $offers;
-
-    /**
-     * Статус работы
-     * @var bool
-     */
-    public $success = true;
+    public $data;
 
     /**
      * Сообщение генератора
@@ -33,10 +16,9 @@ class YMLGenerator
      */
     public $message = '';
 
-    public function __construct(array $categories, array $offers)
+    public function __construct(array $data)
     {
-        $this->categories = $categories;
-        $this->offers = $offers;
+        $this->data = $data;
     }
 
     /**
@@ -44,25 +26,34 @@ class YMLGenerator
      */
     public function run()
     {
-        $data = $this->getData();
+        $config = $this->getConfig();
+        $data = $this->getData($config);
+        $data['config'] = $config;
         if ($this->message) {
             return;
         }
 
         $builder = new Builder($data);
         $text = $builder->build();
-        file_put_contents($data['ymlFilename'], $text);
+        $outputFile = strlen($config['ymlFilename']) ? $config['ymlFilename'] : 'shop.yml';
+        file_put_contents($outputFile, $text);
 
-        $this->message = "Файл {$data['ymlFilename']} успешно сгенерирован!";
+        $this->message = "Файл {$config['ymlFilename']} успешно сгенерирован!";
     }
 
-    private function getData()
+    private function getData(array $config)
     {
-        if (!file_exists(self::CONFIG_FILENAME)) {
+        $validator = new Validator($config);
+        return $validator->validateAll($this->data);
+    }
+
+    private function getConfig()
+    {
+        if (!file_exists('config.php')) {
             $this->message = 'Файл конфигурации config.php не найден! Создайте его, затем перезапустите генератор.';
         }
 
-        $config = include self::CONFIG_FILENAME;
+        $config = include 'config.php';
         $example = include 'config-example.php';
 
         $missingKeys = [];
@@ -79,17 +70,7 @@ class YMLGenerator
 
         $config['availableCountries'] = $this->getAvailableCountries();
         $config['date'] = date("Y-m-d H:i", time());
-
-        $validator = new Validator($config['simplifiedOffers']);
-        $validatedOffers = $validator->validate($this->offers);
-
-        $data = [
-            'config' => $config,
-            'categories' => $this->categories,
-            'offers' => $validatedOffers
-        ];
-
-        return $data;
+        return $config;
     }
 
     /**

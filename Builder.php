@@ -40,7 +40,6 @@ class Builder
 
         ob_start();
         include 'template.php';
-        $template = ob_get_clean();
-        return $template;
+        return ob_get_clean();
     }
 }

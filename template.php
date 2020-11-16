@@ -1,20 +1,23 @@
-<\?xml version="1.0" encoding="UTF-8"?>
-<yml_catalog date="<?= $date ?>">
+<?php
+
+use src\Builder;
+
+?>
+
+<?= '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL ?>
+<yml_catalog date="<?= $config['date'] ?>">
     <shop>
-        <name><?= $companyName ?></name>
-        <company><?= $companyDescription ?></company>
-        <url><?= $companyWebsite ?></url>
+        <name><?= $config['companyName'] ?></name>
+        <company><?= $config['companyDescription'] ?></company>
+        <url><?= $config['companyWebsite'] ?></url>
         <currencies>
-            <?php foreach ($currencies as $code => $rate): ?>
+            <?php foreach ($config['currencies'] as $code => $rate): ?>
                 <currency id="<?= $code ?>" rate="<?= $rate ?>"/>
             <?php endforeach; ?>
         </currencies>
         <categories>
             <?php foreach ($categories as $category): ?>
                 <?php if (!is_int($category['id']) || $category['id'] <= 0): ?>
-                    <?php continue; ?>
-                <?php endif; ?>
-                <?php if (!is_int($category['parentId']) || $category['parentId'] <= 0): ?>
                     <?php continue; ?>
                 <?php endif; ?>
                 <?php $parentId = isset($category['parentId']) ? "parentId=\"{$category['parentId']}\"" : '' ?>
@@ -25,9 +28,9 @@
             <?php foreach ($offers as $offer): ?>
                 <offer id="<?= $offer['id'] ?>"
                     <?= isset($offer['bid']) ? "bid=\"{$offer['bid']}\"" : '' ?>
-                    <?= $simplifiedOffers ? 'type="vendor.model"' : '' ?>
+                    <?= $config['simplifiedOffers'] ? 'type="vendor.model"' : '' ?>
                     <?= isset($offer['available']) ? "available=\"{$offer['available']}\"" : '' ?> >
-                    <?php if ($simplifiedOffers): ?>
+                    <?php if ($config['simplifiedOffers']): ?>
                         <name><?= $offer['name'] ?></name>
                         <?php if (isset($offer['vendor'])): ?>
                             <vendor><?= $offer['vendor'] ?></vendor>
@@ -60,19 +63,25 @@
                         <delivery><?= $offer['delivery'] ?></delivery>
                     <?php endif; ?>
                     <?php if (isset($offer['delivery-options']) && is_array($offer['delivery-options'])): ?>
-                        <?php foreach ($offer['delivery-options'] as $option): ?>
-                            <?php $orderBefore = $option['order-before'] ? "order-before=\"{$option['order-before']}\"" : ''; ?>
-                            <option cost="<?= $option['cost'] ?>" days="<?= $option['days'] ?>" <?= $orderBefore ?>/>
-                        <?php endforeach; ?>
+                        <delivery-options>
+                            <?php foreach ($offer['delivery-options'] as $option): ?>
+                                <?php $orderBefore = isset($option['order-before']) ? "order-before=\"{$option['order-before']}\"" : ''; ?>
+                                <option cost="<?= $option['cost'] ?>"
+                                        days="<?= $option['days'] ?>" <?= $orderBefore ?>/>
+                            <?php endforeach; ?>
+                        </delivery-options>
                     <?php endif; ?>
                     <?php if (isset($offer['pickup'])): ?>
                         <pickup><?= $offer['pickup'] ?></pickup>
                     <?php endif; ?>
                     <?php if (isset($offer['pickup-options']) && is_array($offer['pickup-options'])): ?>
-                        <?php foreach ($offer['pickup-options'] as $option): ?>
-                            <?php $orderBefore = $option['order-before'] ? "order-before=\"{$option['order-before']}\"" : ''; ?>
-                            <option cost="<?= $option['cost'] ?>" days="<?= $option['days'] ?>" <?= $orderBefore ?>/>
-                        <?php endforeach; ?>
+                        <pickup-options>
+                            <?php foreach ($offer['pickup-options'] as $option): ?>
+                                <?php $orderBefore = isset($option['order-before']) ? "order-before=\"{$option['order-before']}\"" : ''; ?>
+                                <option cost="<?= $option['cost'] ?>"
+                                        days="<?= $option['days'] ?>" <?= $orderBefore ?>/>
+                            <?php endforeach; ?>
+                        </pickup-options>
                     <?php endif; ?>
                     <?php if (isset($offer['store'])): ?>
                         <store><?= $offer['store'] ?></store>
@@ -81,7 +90,7 @@
                     <?php if (isset($offer['manufacturer_warranty'])): ?>
                         <manufacturer_warranty><?= $offer['manufacturer_warranty'] ?></manufacturer_warranty>
                     <?php endif; ?>
-                    <?php if (isset($offer['country_of_origin']) && in_array($offer['country_of_origin'], $availableCountries)): ?>
+                    <?php if (isset($offer['country_of_origin']) && in_array($offer['country_of_origin'], $config['availableCountries'])): ?>
                         <country_of_origin><?= $offer['country_of_origin'] ?></country_of_origin>
                     <?php endif; ?>
                     <?php if (isset($offer['adult'])): ?>
@@ -94,13 +103,13 @@
                     <?php endif; ?>
                     <?php if (isset($offer['param']) && is_array($offer['param'])): ?>
                         <?php foreach ($offer['param'] as $param): ?>
-                            <?php $unit = $param['unit'] ? "order-before=\"{$param['unit']}\"" : ''; ?>
+                            <?php $unit = isset($param['unit']) ? "unit=\"{$param['unit']}\"" : ''; ?>
                             <param name="<?= $param['name'] ?>" <?= $unit ?>><?= $param['value'] ?></param>
                         <?php endforeach; ?>
                     <?php endif; ?>
                     <?php if (isset($offer['condition'], $offer['condition_description']) &&
-                        in_array($offer['condition'], self::CONDITION_TYPES) &&
-                        strlen($offer['condition_description']) <= self::CONDITION_DESCRIPTION_LENGTH): ?>
+                        in_array($offer['condition'], Builder::CONDITION_TYPES) &&
+                        strlen($offer['condition_description']) <= Builder::CONDITION_DESCRIPTION_LENGTH): ?>
                         <condition type="<?= $offer['condition'] ?>">
                             <reason><?= $offer['condition_description'] ?></reason>
                         </condition>
@@ -121,10 +130,10 @@
                         <downloadable><?= $offer['downloadable'] ?></downloadable>
                     <?php endif; ?>
                     <?php if (isset($offer['age'])): ?>
-                        <?php if ($offer['age_type'] === 'year' && in_array($offer['age_type'], self::AGE_YEAR)): ?>
+                        <?php if ($offer['age_type'] === 'year' && in_array($offer['age_type'], Builder::AGE_YEAR)): ?>
                             <param unit="year"><?= $offer['age'] ?></param>
                         <?php endif; ?>
-                        <?php if ($offer['age_type'] === 'month' && in_array($offer['age_type'], self::AGE_MONTH)): ?>
+                        <?php if ($offer['age_type'] === 'month' && in_array($offer['age_type'], Builder::AGE_MONTH)): ?>
                             <param unit="month"><?= $offer['age'] ?></param>
                         <?php endif; ?>
                     <?php endif; ?>

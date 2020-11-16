@@ -4,22 +4,38 @@ namespace src;
 
 class Validator
 {
+    // Правила для URL
+    const URL_REGEX = "/(https?:\/\/(\S*?\.\S*?))([\s)\[\]{},;\"\':<]|\.\s|$)/i";
     const URL_MAX_LENGTH = 2048;
-    const BOOLEAN_AVAILABLE_WORDS = ['yes', 'true', '1', 'no', 'false', '0'];
 
+    // Правила для изображений
+    const IMAGE_URL_MAX_LENGTH = 512;
+    const IMAGE_VALID_EXTENSIONS = ['png', 'jpg'];
+
+    // Возможные значения для полей boolean
+    const BOOLEAN_TRUE = ['yes', 'true', '1'];
+    const BOOLEAN_FALSE = ['no', 'false', '0'];
+
+    // Формат записи для поля dimensions
+    const DIMENSIONS_REGEX = '/[0-9]*\.?[0-9]*\/[0-9]*\.?[0-9]*\/[0-9]*\.?[0-9]*/';
+
+    // Поля для упрощенного типа
     const SIMPLIFIED_TYPE_FIELDS = [
         'name' => 'required|string',
         'vendor' => 'string',
     ];
 
+    // Поля для произвольного типа
     const CUSTOM_TYPE_FIELDS = [
         'model' => 'required|string',
         'vendor' => 'required|string',
         'typePrefix' => 'string',
     ];
 
+    // Правила для атрибутов
+    // (!) Правило required обязательно идет первым
     const FIELDS_RULES = [
-        'id' => 'required|int|max[20]',
+        'id' => 'required|int|length[20]',
         'available' => 'boolean',
         'type' => 'select[medicine,books,audiobooks,artist.title,event-ticket,tour,alco]',
         'bid' => 'int',
@@ -27,35 +43,36 @@ class Validator
         'url' => 'required|string|url',
         'price' => 'required|float',
         'price_from' => 'boolean',
-        'oldprice' => 'float|compare[oldprice,>,price]',
+        'oldprice' => 'float|greater[price]',
         'enable_auto_discounts' => 'boolean',
-        'currencyId' => 'required|boolean',
-        'categoryId' => 'required|string|max[18]',
-        'picture' => 'required|string|url|image|max[512]',
-        'supplier' => 'string|max[15]',
+        'currencyId' => 'required|string|currency',
+        'categoryId' => 'required|string|length[18]',
+        'picture' => 'required|string|url|image',
+        'supplier' => 'string|length[15]',
         'delivery' => 'boolean',
         'delivery-options' => 'array',
         'pickup' => 'boolean',
         'pickup-options' => 'array',
         'store' => 'boolean',
-        'description' => 'required|string|max[3000]',
-        'sales_notes' => 'string|max[50]',
+        'description' => 'required|string|length[3000]',
+        'sales_notes' => 'string|length[50]',
         'min-quantity' => 'int',
         'manufacturer_warranty' => 'boolean',
-        'country_of_origin' => 'string',
+        'country_of_origin' => 'string|country',
         'adult' => 'boolean',
-        'barcode' => 'array',
+        'barcode' => 'simplearray',
         'param' => 'array',
         'condition' => 'array',
         'credit-template' => 'string',
         'expiry' => 'string',
         'weight' => 'float',
-        'dimensions' => 'regex[[0-9]*\.?[0-9]*/[0-9]*\.?[0-9]*/[0-9]*\.?[0-9]*]',
+        'dimensions' => 'dimensions',
         'downloadable' => 'float',
-        'age_month' => 'select[0,1,2,3,4,5,6,7,8,9,10,11,12]',
+        'age_month' => 'range[0-12]',
         'age_year' => 'select[0,6,12,16,18]',
     ];
 
+    // Правила для пложенных атрибутов
     const ARRAY_FIELDS_RULES = [
         'delivery-options' => [
             'cost' => 'required|int',
@@ -75,123 +92,252 @@ class Validator
         ],
         'condition' => [
             'type' => 'select[likenew,used]',
-            'reason' => 'string|max[3000]'
+            'reason' => 'string|length[3000]'
         ]
     ];
 
     /**
+     * Поля, зависимые от типа вывода
      * @var array
      */
     private $typeFields;
 
-    public function __construct(bool $simplified)
+    /**
+     * Конфигурация модуля
+     * @var array
+     */
+    private $config;
+
+    public function __construct(array $config)
     {
-        $this->typeFields = $simplified ? self::SIMPLIFIED_TYPE_FIELDS : self::CUSTOM_TYPE_FIELDS;
+        $this->config = $config;
+        $this->typeFields = $config['simplifiedOffers'] ? self::SIMPLIFIED_TYPE_FIELDS : self::CUSTOM_TYPE_FIELDS;
     }
 
-    /**
-     * @param array $offers
-     * @return array
-     */
-    public function validate(array $offers)
+    public function validateAll(array $data)
+    {
+        return [
+            'offers' => $this->offers($data['offers']),
+            'categories' => $this->categories($data['categories'])
+        ];
+    }
+
+    private function offers(array $offers)
     {
         $allRules = self::FIELDS_RULES + $this->typeFields;
 
+        $validated = [];
         foreach ($offers as $offer) {
             foreach ($allRules as $field => $rulesList) {
                 $rules = explode('|', $rulesList);
                 foreach ($rules as $rule) {
-                    list($ruleType, $ruleOptions) = $this->getRuleOptions($rule);
 
+                    // Проверяем наличие поля
+                    // Если его нет и оно обязательное - пропускаем товар
+                    // Если необязательное - пропускаем правило
                     if (!isset($offer[$field])) {
-                        if ($ruleType === 'required') {
+                        if ($rule === 'required') {
                             continue 3;
+                        }
+                        continue 2;
+                    }
+
+                    $valid = $this->validate($offer, $rule, $field);
+
+                    if ($valid === false) {
+                        continue 3;
+                    }
+                }
+            }
+            $validated[] = $offer;
+        }
+
+        return $validated;
+    }
+
+    private function categories(array $categories)
+    {
+        return $categories;
+    }
+
+    private function validate($data, $rule, $field)
+    {
+        list($ruleType, $ruleOptions) = $this->getRuleOptions($rule);
+        $value = is_array($data) ? $data[$field] : $data;
+
+        switch ($ruleType) {
+            case 'int':
+                return $this->int($value);
+            case 'float':
+                return $this->float($value);
+            case 'string':
+                return $this->string($value);
+            case 'boolean':
+                return $this->boolean($value);
+            case 'array':
+                return $this->array($data, $field);
+            case 'simplearray':
+                return $this->simpleArray($data, $field);
+            case 'url':
+                return $this->url($value);
+            case 'image':
+                return $this->image($value);
+            case 'greater':
+                return $this->greater($data, $value, $ruleOptions);
+            case 'select':
+                return $this->select($value, $ruleOptions);
+            case 'range':
+                return $this->range($value, $ruleOptions);
+            case 'dimensions':
+                return $this->dimensions($value);
+            case 'length':
+                return $this->length($value, $ruleOptions);
+            case 'currency':
+                return $this->currency($value);
+            case 'country':
+                return $this->country($value);
+            default:
+                return true;
+        }
+    }
+
+    private function int($value)
+    {
+        return filter_var($value, FILTER_VALIDATE_INT);
+    }
+
+    private function float($value)
+    {
+        return filter_var($value, FILTER_VALIDATE_FLOAT);
+    }
+
+    private function string($value)
+    {
+        return is_string($value);
+    }
+
+    private function boolean($value)
+    {
+        $isTrue = in_array($value, self::BOOLEAN_TRUE);
+        $isFalse = in_array($value, self::BOOLEAN_FALSE);
+
+        return $isTrue || $isFalse;
+    }
+
+    private function array($data, $field)
+    {
+        if (!isset($data[$field])) {
+            return true;
+        }
+
+        $rows = $data[$field];
+        $subFields = self::ARRAY_FIELDS_RULES[$field];
+
+        foreach ($rows as $row) {
+            foreach ($subFields as $subField => $subRules) {
+                $rules = explode('|', $subRules);
+                foreach ($rules as $rule) {
+
+                    // Проверяем наличие поля
+                    if (!isset($row[$subField])) {
+                        if ($rule === 'required') {
+                            return false;
                         } else {
-                            continue 2;
+                            continue;
                         }
                     }
 
-                    $value = &$offer[$field];
+                    $result = $this->validate($row, $rule, $subField);
 
-                    switch ($ruleType) {
-                        case 'int':
-                            $this->validateInt($value);
-                            break;
-                        case 'float':
-                            $this->validateFloat($value);
-                            break;
-                        case 'string':
-                            $this->validateString($field, $value);
-                            break;
-                        case 'boolean':
-                            if(!$this->validateBoolean($value)) {
-                                continue 2;
-                            }
-                            break;
-                        case 'url':
-                            $this->validateUrl($value);
-                            break;
-                        case 'array':
-                            $this->validateArray($value);
-                            break;
-                        default:
-                            continue 2;
-                            break;
+                    if ($result === false) {
+                        return false;
                     }
                 }
             }
         }
-
-        return $offers;
+        return true;
     }
 
-    private function validateInt(&$value)
+    private function simpleArray($data, $field)
     {
-        if (!is_int($value)) {
-            $value = intval($value);
-        }
-    }
-
-    private function validateFloat(&$value)
-    {
-        if (!is_float($value)) {
-            $value = floatval($value);
-        }
-    }
-
-    private function validateString(string $fieldType, &$value)
-    {
-        if ($fieldType === 'description') {
-            return strpos($value, '<![CDATA[') !== false ? $value : "<![CDATA[{$value}]]";
+        if (!isset($data[$field])) {
+            return true;
         }
 
-        return htmlspecialchars($value);
+        $rules = explode('|', self::ARRAY_FIELDS_RULES[$field]);
+        foreach($data[$field] as $value) {
+            foreach($rules as $rule) {
+                $result = $this->validate($value, $rule, $field);
+
+                if ($result === false) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
-    private function validateBoolean($value)
+    private function url($value)
     {
-        return in_array(strval($value), self::BOOLEAN_AVAILABLE_WORDS);
+        $maxLength = strlen($value) <= self::URL_MAX_LENGTH;
+        $match = preg_match(self::URL_REGEX, $value);
+        return $maxLength && $match;
     }
 
-    private function validateArray($value)
+    private function image($value)
     {
-
+        $maxLength = strlen($value) <= self::IMAGE_URL_MAX_LENGTH;
+        $validExtension = in_array(substr($value, -3), self::IMAGE_VALID_EXTENSIONS);
+        return $maxLength && $validExtension;
     }
 
-    private function validateUrl($value)
+    private function greater($offer, $value, $greaterThan)
     {
+        return $value > $offer[$greaterThan];
+    }
 
+    private function select($value, $optionsList)
+    {
+        $options = explode(',', $optionsList);
+        return in_array($value, $options);
+    }
+
+    private function range($value, $optionsList)
+    {
+        $options = explode('-', $optionsList);
+        return $value >= $options[0] && $value <= $options[1];
+    }
+
+    private function dimensions($value)
+    {
+        return preg_match(self::DIMENSIONS_REGEX, $value);
+    }
+
+    private function length($value, $length)
+    {
+        return strlen($value) < $length;
+    }
+
+    private function currency($value)
+    {
+        $currencies = array_keys($this->config['currencies']);
+        return in_array($value, $currencies);
+    }
+
+    private function country($value)
+    {
+        $countries = $this->config['availableCountries'];
+        return in_array($value, $countries);
     }
 
     private function getRuleOptions(string $rule)
     {
-        $optionStart = strpos($rule, '[');
-        if ($optionStart) {
-            $ruleType = substr($rule, 0, $optionStart);
-            $option = substr($rule, $optionStart, strlen($rule) - 1);
-            return [$ruleType, $option];
-        }
+        preg_match('/([a-z]+)\[?([\w,.-]+)?]?/', $rule, $matches);
 
-        return [$rule, null];
+        $rule = $matches[1];
+        $option = $matches[2] ?? null;
+
+        return [$rule, $option];
     }
 }
