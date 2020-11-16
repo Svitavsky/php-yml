@@ -1,5 +1,7 @@
 <?php
 
+namespace src;
+
 class Builder
 {
     // Возможные состояния уцененного товара
@@ -34,22 +36,10 @@ class Builder
      */
     public function build(): string
     {
-        $availableCountries = $this->getAvailableCountries();
         extract($this->data);
 
         ob_start();
         include 'template.php';
-        $template = ob_get_clean();
-        return $template;
-    }
-
-    /**
-     * Список доступных стран для Яндекс.Маркет
-     * @return array
-     */
-    private function getAvailableCountries()
-    {
-        $countriesList = file_get_contents('countries.csv');
-        return explode(',', $countriesList);
+        return ob_get_clean();
     }
 }
