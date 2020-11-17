@@ -54,7 +54,7 @@ class YMLGenerator
         }
 
         $config = include 'config.php';
-        $example = include 'config-example.php';
+        $example = include 'config.example.php';
 
         $missingKeys = [];
         foreach ($example as $key => $value) {

@@ -10,7 +10,7 @@ return [
     'companyWebsite' => 'https://example.com', // URL вашей компании
 
     // Название итогового файла с предложениями
-    'ymlFilename' => 'example.yml',
+    'ymlFilename' => 'example.xml',
 
     // Переключатель упрощенного типа для предложений
     // true - упрощенный тип

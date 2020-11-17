@@ -3,13 +3,12 @@
 use src\Builder;
 
 ?>
-
 <?= '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL ?>
 <yml_catalog date="<?= $config['date'] ?>">
     <shop>
         <name><?= $config['companyName'] ?></name>
         <company><?= $config['companyDescription'] ?></company>
-        <url><?= $config['companyWebsite'] ?></url>
+        <url><?= urlencode(utf8_encode($config['companyWebsite'])) ?></url>
         <currencies>
             <?php foreach ($config['currencies'] as $code => $rate): ?>
                 <currency id="<?= $code ?>" rate="<?= $rate ?>"/>
@@ -17,9 +16,6 @@ use src\Builder;
         </currencies>
         <categories>
             <?php foreach ($categories as $category): ?>
-                <?php if (!is_int($category['id']) || $category['id'] <= 0): ?>
-                    <?php continue; ?>
-                <?php endif; ?>
                 <?php $parentId = isset($category['parentId']) ? "parentId=\"{$category['parentId']}\"" : '' ?>
                 <category id="<?= $category['id'] ?>" <?= $parentId ?>><?= $category['name'] ?></category>
             <?php endforeach; ?>
@@ -45,16 +41,18 @@ use src\Builder;
                     <?php if (isset($offer['vendorCode'])): ?>
                         <vendorCode><?= $offer['vendorCode'] ?></vendorCode>
                     <?php endif; ?>
-                    <url><?= $offer['url'] ?></url>
+                    <url><?= urlencode(utf8_encode($offer['url'])) ?></url>
                     <price><?= $offer['price'] ?></price>
                     <?php if (isset($offer['oldprice'])): ?>
                         <oldprice><?= $offer['oldprice'] ?></oldprice>
                     <?php endif; ?>
-                    <enable_auto_discounts><?= $offer['enable_auto_discounts'] ?></enable_auto_discounts>
+                    <?php if (isset($offer['enable_auto_discounts'])): ?>
+                        <enable_auto_discounts><?= $offer['enable_auto_discounts'] ?></enable_auto_discounts>
+                    <?php endif; ?>
                     <currencyId><?= $offer['currencyId'] ?></currencyId>
                     <categoryId><?= $offer['categoryId'] ?></categoryId>
                     <?php if (isset($offer['picture']) && strlen($offer['picture']) < 512): ?>
-                        <picture><?= $offer['picture'] ?></picture>
+                        <picture><?= urlencode(utf8_encode($offer['picture'])) ?></picture>
                     <?php endif; ?>
                     <?php if (isset($offer['supplier'])): ?>
                         <supplier ogrn="<?= $offer['supplier'] ?>"/>
@@ -86,7 +84,9 @@ use src\Builder;
                     <?php if (isset($offer['store'])): ?>
                         <store><?= $offer['store'] ?></store>
                     <?php endif; ?>
-                    <description><?= $offer['description'] ?></description>
+                    <?php if (isset($offer['description'])): ?>
+                        <description><?= $offer['description'] ?></description>
+                    <?php endif; ?>
                     <?php if (isset($offer['manufacturer_warranty'])): ?>
                         <manufacturer_warranty><?= $offer['manufacturer_warranty'] ?></manufacturer_warranty>
                     <?php endif; ?>

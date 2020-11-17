@@ -54,7 +54,7 @@ class Validator
         'pickup' => 'boolean',
         'pickup-options' => 'array',
         'store' => 'boolean',
-        'description' => 'required|string|length[3000]',
+        'description' => 'string|length[3000]',
         'sales_notes' => 'string|length[50]',
         'min-quantity' => 'int',
         'manufacturer_warranty' => 'boolean',
