@@ -7,23 +7,6 @@ use src\Builder;
 <?= '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL ?>
 <yml_catalog date="<?= $config['date'] ?>">
     <shop>
-        <name><?= $config['companyName'] ?></name>
-        <company><?= $config['companyDescription'] ?></company>
-        <url><?= $config['companyWebsite'] ?></url>
-        <currencies>
-            <?php foreach ($config['currencies'] as $code => $rate): ?>
-                <currency id="<?= $code ?>" rate="<?= $rate ?>"/>
-            <?php endforeach; ?>
-        </currencies>
-        <categories>
-            <?php foreach ($categories as $category): ?>
-                <?php if (!is_int($category['id']) || $category['id'] <= 0): ?>
-                    <?php continue; ?>
-                <?php endif; ?>
-                <?php $parentId = isset($category['parentId']) ? "parentId=\"{$category['parentId']}\"" : '' ?>
-                <category id="<?= $category['id'] ?>" <?= $parentId ?>><?= $category['name'] ?></category>
-            <?php endforeach; ?>
-        </categories>
         <offers>
             <?php foreach ($offers as $offer): ?>
                 <offer id="<?= $offer['id'] ?>"

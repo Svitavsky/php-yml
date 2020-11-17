@@ -72,6 +72,32 @@ class Validator
         'age_year' => 'select[0,6,12,16,18]',
     ];
 
+    /**
+     * Простые поля с выводом вида
+     * <name>$value</name>
+     */
+    const SIMPLE_FIELDS = [
+        'vendorCode',
+        'url',
+        'oldprice',
+        'enable_auto_discounts',
+        'currencyId',
+        'categoryId',
+        'picture',
+        'delivery',
+        'pickup',
+        'store',
+        'sales_notes',
+        'min-quantity',
+        'manufacturer_warranty',
+        'country_of_origin',
+        'adult',
+        'expiry',
+        'weight',
+        'dimensions',
+        'downloadable'
+    ];
+
     // Правила для пложенных атрибутов
     const ARRAY_FIELDS_RULES = [
         'delivery-options' => [
@@ -147,6 +173,10 @@ class Validator
                     if ($valid === false) {
                         continue 3;
                     }
+                }
+                if(in_array($field, self::SIMPLE_FIELDS)) {
+                    $offer['simple'][$field] = $offer[$field];
+                    unset($offer[$field]);
                 }
             }
             $validated[] = $offer;
