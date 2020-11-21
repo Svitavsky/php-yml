@@ -8,7 +8,7 @@ use src\Builder;
     <shop>
         <name><?= $config['companyName'] ?></name>
         <company><?= $config['companyDescription'] ?></company>
-        <url><?= urlencode(utf8_encode($config['companyWebsite'])) ?></url>
+        <url><?= rawurlencode(utf8_encode($config['companyWebsite'])) ?></url>
         <currencies>
             <?php foreach ($config['currencies'] as $code => $rate): ?>
                 <currency id="<?= $code ?>" rate="<?= $rate ?>"/>
@@ -24,9 +24,10 @@ use src\Builder;
             <?php foreach ($offers as $offer): ?>
                 <offer id="<?= $offer['id'] ?>"
                     <?= isset($offer['bid']) ? "bid=\"{$offer['bid']}\"" : '' ?>
-                    <?= $config['simplifiedOffers'] ? 'type="vendor.model"' : '' ?>
+                    <?= isset($offer['group_id']) ? "group_id=\"{$offer['group_id']}\"" : '' ?>
+                    <?= isset($offer['type']) ? "type=\"{$offer['type']}\"" : '' ?>
                     <?= isset($offer['available']) ? "available=\"{$offer['available']}\"" : '' ?> >
-                    <?php if ($config['simplifiedOffers']): ?>
+                    <?php if (!isset($offer['type'])): ?>
                         <name><?= $offer['name'] ?></name>
                         <?php if (isset($offer['vendor'])): ?>
                             <vendor><?= $offer['vendor'] ?></vendor>
@@ -41,10 +42,14 @@ use src\Builder;
                     <?php if (isset($offer['vendorCode'])): ?>
                         <vendorCode><?= $offer['vendorCode'] ?></vendorCode>
                     <?php endif; ?>
-                    <url><?= urlencode(utf8_encode($offer['url'])) ?></url>
-                    <price><?= $offer['price'] ?></price>
+                    <url><?= rawurlencode(utf8_encode($offer['url'])) ?></url>
+                    <?php $priceFrom = isset($offer['price_from']) ? 'from="true"' : '' ?>
+                    <price <?= $priceFrom ?>><?= $offer['price'] ?></price>
                     <?php if (isset($offer['oldprice'])): ?>
                         <oldprice><?= $offer['oldprice'] ?></oldprice>
+                    <?php endif; ?>
+                    <?php if (isset($offer['purchase_price'])): ?>
+                        <purchase_price><?= $offer['purchase_price'] ?></purchase_price>
                     <?php endif; ?>
                     <?php if (isset($offer['enable_auto_discounts'])): ?>
                         <enable_auto_discounts><?= $offer['enable_auto_discounts'] ?></enable_auto_discounts>
@@ -52,7 +57,7 @@ use src\Builder;
                     <currencyId><?= $offer['currencyId'] ?></currencyId>
                     <categoryId><?= $offer['categoryId'] ?></categoryId>
                     <?php if (isset($offer['picture']) && strlen($offer['picture']) < 512): ?>
-                        <picture><?= urlencode(utf8_encode($offer['picture'])) ?></picture>
+                        <picture><?= rawurlencode(utf8_encode($offer['picture'])) ?></picture>
                     <?php endif; ?>
                     <?php if (isset($offer['supplier'])): ?>
                         <supplier ogrn="<?= $offer['supplier'] ?>"/>
@@ -85,7 +90,10 @@ use src\Builder;
                         <store><?= $offer['store'] ?></store>
                     <?php endif; ?>
                     <?php if (isset($offer['description'])): ?>
-                        <description><?= $offer['description'] ?></description>
+                        <description><![CDATA[<?= $offer['description'] ?>]]></description>
+                    <?php endif; ?>
+                    <?php if (isset($offer['sales_notes'])): ?>
+                        <sales_notes><?= $offer['sales_notes'] ?></sales_notes>
                     <?php endif; ?>
                     <?php if (isset($offer['manufacturer_warranty'])): ?>
                         <manufacturer_warranty><?= $offer['manufacturer_warranty'] ?></manufacturer_warranty>
@@ -98,20 +106,21 @@ use src\Builder;
                     <?php endif; ?>
                     <?php if (isset($offer['barcode']) && is_array($offer['barcode'])): ?>
                         <?php foreach ($offer['barcode'] as $barcode): ?>
-                            <barcode><?= $offer['barcode'] ?></barcode>
+                            <barcode><?= $barcode ?></barcode>
                         <?php endforeach; ?>
                     <?php endif; ?>
                     <?php if (isset($offer['param']) && is_array($offer['param'])): ?>
                         <?php foreach ($offer['param'] as $param): ?>
                             <?php $unit = isset($param['unit']) ? "unit=\"{$param['unit']}\"" : ''; ?>
-                            <param name="<?= $param['name'] ?>" <?= $unit ?>><?= $param['value'] ?></param>
+                            <?php $name = isset($param['name']) ? "name=\"{$param['name']}\"" : ''; ?>
+                            <param <?= $name ?> <?= $unit ?>><?= $param['value'] ?></param>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                    <?php if (isset($offer['condition'], $offer['condition_description']) &&
-                        in_array($offer['condition'], Builder::CONDITION_TYPES) &&
-                        strlen($offer['condition_description']) <= Builder::CONDITION_DESCRIPTION_LENGTH): ?>
-                        <condition type="<?= $offer['condition'] ?>">
-                            <reason><?= $offer['condition_description'] ?></reason>
+                    <?php if (isset($offer['condition'], $offer['condition']['reason'], $offer['condition']['type']) &&
+                        in_array($offer['condition']['type'], Builder::CONDITION_TYPES) &&
+                        strlen($offer['condition']['reason']) <= Builder::CONDITION_DESCRIPTION_LENGTH): ?>
+                        <condition type="<?= $offer['condition']['type'] ?>">
+                            <reason><?= $offer['condition']['reason'] ?></reason>
                         </condition>
                     <?php endif; ?>
                     <?php if (isset($offer['credit-template'])): ?>
@@ -128,14 +137,6 @@ use src\Builder;
                     <?php endif; ?>
                     <?php if (isset($offer['downloadable'])): ?>
                         <downloadable><?= $offer['downloadable'] ?></downloadable>
-                    <?php endif; ?>
-                    <?php if (isset($offer['age'])): ?>
-                        <?php if ($offer['age_type'] === 'year' && in_array($offer['age_type'], Builder::AGE_YEAR)): ?>
-                            <param unit="year"><?= $offer['age'] ?></param>
-                        <?php endif; ?>
-                        <?php if ($offer['age_type'] === 'month' && in_array($offer['age_type'], Builder::AGE_MONTH)): ?>
-                            <param unit="month"><?= $offer['age'] ?></param>
-                        <?php endif; ?>
                     <?php endif; ?>
                 </offer>
             <?php endforeach; ?>
