@@ -5,13 +5,13 @@ use src\Builder;
 ?>
 
 <?= '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL ?>
-<yml_catalog date="<?= $config['date'] ?>">
+<yml_catalog date="<?= $date ?>">
     <shop>
-        <name><?= $config['companyName'] ?></name>
-        <company><?= $config['companyDescription'] ?></company>
-        <url><?= $config['companyWebsite'] ?></url>
+        <name><?= $shop['name'] ?></name>
+        <company><?= $shop['description'] ?></company>
+        <url><?= $shop['website'] ?></url>
         <currencies>
-            <?php foreach ($config['currencies'] as $code => $rate): ?>
+            <?php foreach ($currencies as $code => $rate): ?>
                 <currency id="<?= $code ?>" rate="<?= $rate ?>"/>
             <?php endforeach; ?>
         </currencies>
@@ -28,9 +28,9 @@ use src\Builder;
             <?php foreach ($offers as $offer): ?>
                 <offer id="<?= $offer['id'] ?>"
                     <?= isset($offer['bid']) ? "bid=\"{$offer['bid']}\"" : '' ?>
-                    <?= $config['simplifiedOffers'] ? 'type="vendor.model"' : '' ?>
+                    <?= isset($offer['type']) ? "type=\"{$offer['type']}\"" : '' ?>
                     <?= isset($offer['available']) ? "available=\"{$offer['available']}\"" : '' ?> >
-                    <?php if ($config['simplifiedOffers']): ?>
+                    <?php if (!isset($offer['type'])): ?>
                         <name><?= $offer['name'] ?></name>
                         <?php if (isset($offer['vendor'])): ?>
                             <vendor><?= $offer['vendor'] ?></vendor>
@@ -90,7 +90,7 @@ use src\Builder;
                     <?php if (isset($offer['manufacturer_warranty'])): ?>
                         <manufacturer_warranty><?= $offer['manufacturer_warranty'] ?></manufacturer_warranty>
                     <?php endif; ?>
-                    <?php if (isset($offer['country_of_origin']) && in_array($offer['country_of_origin'], $config['availableCountries'])): ?>
+                    <?php if (isset($offer['country_of_origin']) && in_array($offer['country_of_origin'], $availableCountries)): ?>
                         <country_of_origin><?= $offer['country_of_origin'] ?></country_of_origin>
                     <?php endif; ?>
                     <?php if (isset($offer['adult'])): ?>
@@ -98,13 +98,14 @@ use src\Builder;
                     <?php endif; ?>
                     <?php if (isset($offer['barcode']) && is_array($offer['barcode'])): ?>
                         <?php foreach ($offer['barcode'] as $barcode): ?>
-                            <barcode><?= $offer['barcode'] ?></barcode>
+                            <barcode><?= $barcode ?></barcode>
                         <?php endforeach; ?>
                     <?php endif; ?>
                     <?php if (isset($offer['param']) && is_array($offer['param'])): ?>
                         <?php foreach ($offer['param'] as $param): ?>
                             <?php $unit = isset($param['unit']) ? "unit=\"{$param['unit']}\"" : ''; ?>
-                            <param name="<?= $param['name'] ?>" <?= $unit ?>><?= $param['value'] ?></param>
+                            <?php $name = isset($param['name']) ? "name=\"{$param['name']}\"" : ''; ?>
+                            <param <?= $name ?> <?= $unit ?>><?= $param['value'] ?></param>
                         <?php endforeach; ?>
                     <?php endif; ?>
                     <?php if (isset($offer['condition'], $offer['condition_description']) &&
