@@ -5,72 +5,32 @@ namespace src;
 class YMLGenerator
 {
     /**
-     * Список данных
-     * @var array
-     */
-    public $data;
-
-    /**
-     * Сообщение генератора
+     * Название итогового файла
      * @var string
      */
-    public $message = '';
+    public $filename;
 
-    public function __construct(array $data)
+    public function __construct(string $filename)
     {
-        $this->data = $data;
+        $this->filename = $filename;
     }
 
     /**
      * Запуск генератора
+     * @param array $data
      */
-    public function run()
+    public function run(array $data)
     {
-        $config = $this->getConfig();
-        $data = $this->getData($config);
-        $data['config'] = $config;
-        if ($this->message) {
-            return;
-        }
+        $data['availableCountries'] = $this->getAvailableCountries();
+        $validator = new Validator($data);
+        $result = $validator->validateAll();
+        $result['date'] = date("Y-m-d H:i", time());
 
-        $builder = new Builder($data);
-        $text = $builder->build();
-        $outputFile = strlen($config['ymlFilename']) ? $config['ymlFilename'] : 'shop.yml';
-        file_put_contents($outputFile, $text);
+        $builder = new Builder($result);
+        $content = $builder->build();
+        file_put_contents($this->filename, $content);
 
-        $this->message = "Файл {$config['ymlFilename']} успешно сгенерирован!";
-    }
-
-    private function getData(array $config)
-    {
-        $validator = new Validator($config);
-        return $validator->validateAll($this->data);
-    }
-
-    private function getConfig()
-    {
-        if (!file_exists('config.php')) {
-            $this->message = 'Файл конфигурации config.php не найден! Создайте его, затем перезапустите генератор.';
-        }
-
-        $config = include 'config.php';
-        $example = include 'config.example.php';
-
-        $missingKeys = [];
-        foreach ($example as $key => $value) {
-            if (!array_key_exists($key, $config)) {
-                $missingKeys[] = $key;
-            }
-        }
-
-        if (count($missingKeys)) {
-            $keys = implode(' ', $missingKeys);
-            $this->message = "Отсутствуют обязательные параметры в файле конфигурации config.php: {$keys}";
-        }
-
-        $config['availableCountries'] = $this->getAvailableCountries();
-        $config['date'] = date("Y-m-d H:i", time());
-        return $config;
+        echo "Файл {$this->filename} успешно сгенерирован!";
     }
 
     /**

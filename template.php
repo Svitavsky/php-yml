@@ -4,13 +4,13 @@ use src\Builder;
 
 ?>
 <?= '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL ?>
-<yml_catalog date="<?= $config['date'] ?>">
+<yml_catalog date="<?= $date ?>">
     <shop>
-        <name><?= $config['companyName'] ?></name>
-        <company><?= $config['companyDescription'] ?></company>
-        <url><?= rawurlencode(utf8_encode($config['companyWebsite'])) ?></url>
+        <name><?= $shop['name'] ?></name>
+        <company><?= $shop['description'] ?></company>
+        <url><?= rawurlencode(utf8_encode($shop['website'])) ?></url>
         <currencies>
-            <?php foreach ($config['currencies'] as $code => $rate): ?>
+            <?php foreach ($currencies as $code => $rate): ?>
                 <currency id="<?= $code ?>" rate="<?= $rate ?>"/>
             <?php endforeach; ?>
         </currencies>
@@ -98,7 +98,7 @@ use src\Builder;
                     <?php if (isset($offer['manufacturer_warranty'])): ?>
                         <manufacturer_warranty><?= $offer['manufacturer_warranty'] ?></manufacturer_warranty>
                     <?php endif; ?>
-                    <?php if (isset($offer['country_of_origin']) && in_array($offer['country_of_origin'], $config['availableCountries'])): ?>
+                    <?php if (isset($offer['country_of_origin']) && in_array($offer['country_of_origin'], $availableCountries)): ?>
                         <country_of_origin><?= $offer['country_of_origin'] ?></country_of_origin>
                     <?php endif; ?>
                     <?php if (isset($offer['adult'])): ?>
