@@ -60,7 +60,7 @@ class Validator
         'pickup' => 'boolean',
         'pickup-options' => 'array',
         'store' => 'boolean',
-        'description' => 'required|string|length[3000]',
+        'description' => 'string|length[3000]',
         'sales_notes' => 'string|length[50]',
         'min-quantity' => 'int',
         'manufacturer_warranty' => 'boolean',
@@ -295,8 +295,8 @@ class Validator
         }
 
         $rules = explode('|', self::ARRAY_FIELDS_RULES[$field]);
-        foreach($data[$field] as $value) {
-            foreach($rules as $rule) {
+        foreach ($data[$field] as $value) {
+            foreach ($rules as $rule) {
                 $result = $this->validate($value, $rule, $field);
 
                 if ($result === false) {
