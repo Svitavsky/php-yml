@@ -19,6 +19,12 @@ class Validator
     // Формат записи для поля dimensions
     const DIMENSIONS_REGEX = '/[0-9]*\.?[0-9]*\/[0-9]*\.?[0-9]*\/[0-9]*\.?[0-9]*/';
 
+    // Замена кода валюты, чтобы во всей выгрузке был 1 код
+    const CURRENCY_REPLACEMENTS = [
+        'RUR' => 'RUB',
+        'RUB' => 'RUR'
+    ];
+
     // Поля для упрощенного типа
     const SIMPLIFIED_TYPE_FIELDS = [
         'name' => 'required|string',
@@ -54,7 +60,7 @@ class Validator
         'pickup' => 'boolean',
         'pickup-options' => 'array',
         'store' => 'boolean',
-        'description' => 'required|string|length[3000]',
+        'description' => 'string|length[3000]',
         'sales_notes' => 'string|length[50]',
         'min-quantity' => 'int',
         'manufacturer_warranty' => 'boolean',
@@ -67,7 +73,7 @@ class Validator
         'expiry' => 'string',
         'weight' => 'float',
         'dimensions' => 'dimensions',
-        'downloadable' => 'float',
+        'downloadable' => 'boolean',
         'age_month' => 'range[0-12]',
         'age_year' => 'select[0,6,12,16,18]',
     ];
@@ -112,7 +118,7 @@ class Validator
         ],
         'barcode' => 'string',
         'param' => [
-            'name' => 'required|string',
+            'name' => 'string',
             'unit' => 'string',
             'value' => 'required|string'
         ],
@@ -123,37 +129,61 @@ class Validator
     ];
 
     /**
-     * Поля, зависимые от типа вывода
+     * Основные данные о магазине
      * @var array
      */
-    private $typeFields;
+    private $shop;
 
     /**
-     * Конфигурация модуля
+     * Список валют, принимаемых магазином и их курс
      * @var array
      */
-    private $config;
+    private $currencies;
 
-    public function __construct(array $config)
+    /**
+     * Список категорий магазина
+     * @var array
+     */
+    private $categories;
+
+    /**
+     * Список предложений магазина
+     * @var array
+     */
+    private $offers;
+
+    /**
+     * Список доступных стран
+     * @var array
+     */
+    private $availableCountries;
+
+    public function __construct(array $data)
     {
-        $this->config = $config;
-        $this->typeFields = $config['simplifiedOffers'] ? self::SIMPLIFIED_TYPE_FIELDS : self::CUSTOM_TYPE_FIELDS;
+        $this->shop = $data['shop'] ?? [];
+        $this->currencies = $data['currencies'] ?? [];
+        $this->categories = $data['categories'] ?? [];
+        $this->offers = $data['offers'] ?? [];
+        $this->availableCountries = $data['availableCountries'] ?? [];
     }
 
-    public function validateAll(array $data)
+    public function validateAll()
     {
         return [
-            'offers' => $this->offers($data['offers']),
-            'categories' => $this->categories($data['categories'])
+            'shop' => $this->shop,
+            'offers' => $this->offers($this->offers),
+            'categories' => $this->categories($this->categories),
+            'currencies' => $this->currencies,
+            'availableCountries' => $this->availableCountries
         ];
     }
 
     private function offers(array $offers)
     {
-        $allRules = self::FIELDS_RULES + $this->typeFields;
-
         $validated = [];
         foreach ($offers as $offer) {
+            $typeFields = isset($offer['type']) ? self::CUSTOM_TYPE_FIELDS : self::SIMPLIFIED_TYPE_FIELDS;
+            $allRules = self::FIELDS_RULES + $typeFields;
             foreach ($allRules as $field => $rulesList) {
                 $rules = explode('|', $rulesList);
                 foreach ($rules as $rule) {
@@ -248,8 +278,8 @@ class Validator
 
     private function boolean($value)
     {
-        $isTrue = in_array($value, self::BOOLEAN_TRUE);
-        $isFalse = in_array($value, self::BOOLEAN_FALSE);
+        $isTrue = $value === true || in_array($value, self::BOOLEAN_TRUE);
+        $isFalse = $value === false || in_array($value, self::BOOLEAN_FALSE);
 
         return $isTrue || $isFalse;
     }
@@ -295,8 +325,8 @@ class Validator
         }
 
         $rules = explode('|', self::ARRAY_FIELDS_RULES[$field]);
-        foreach($data[$field] as $value) {
-            foreach($rules as $rule) {
+        foreach ($data[$field] as $value) {
+            foreach ($rules as $rule) {
                 $result = $this->validate($value, $rule, $field);
 
                 if ($result === false) {
@@ -351,14 +381,24 @@ class Validator
 
     private function currency($value)
     {
-        $currencies = array_keys($this->config['currencies']);
+        $currencies = array_keys($this->currencies);
+
+        // В выгрузке можно применять оба кода рубля, используем тот, который указан в конфиге
+        if (in_array('RUR', $currencies) && $value === 'RUB') {
+            $value = 'RUR';
+        }
+
+        if (in_array('RUB', $currencies) && $value === 'RUR') {
+            $value = 'RUB';
+        }
+
         return in_array($value, $currencies);
     }
 
     private function country($value)
     {
-        $countries = $this->config['availableCountries'];
-        return in_array($value, $countries);
+        $availableCountries = $this->availableCountries;
+        return in_array($value, $availableCountries);
     }
 
     private function getRuleOptions(string $rule)
