@@ -176,12 +176,9 @@ class Parser
         $params = [];
         foreach ($data->param as $row) {
             $param = [
+                'name' => (string)$row['name'],
                 'value' => (string)$row
             ];
-
-            if (isset($row['name'])) {
-                $param['name'] = (string)$row['name'];
-            }
 
             if (isset($row['unit'])) {
                 $param['unit'] = (string)$row['unit'];
