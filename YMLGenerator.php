@@ -24,7 +24,6 @@ class YMLGenerator
         $data['availableCountries'] = $this->getAvailableCountries();
         $validator = new Validator($data);
         $result = $validator->validateAll();
-        $result['date'] = date("Y-m-d H:i", time());
 
         $builder = new Builder($result);
         $content = $builder->build();
